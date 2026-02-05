@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import prize1 from '@/assets/prize-1.jpg';
 import prize2 from '@/assets/prize-2.jpg';
 import prize3 from '@/assets/prize-3.jpg';
@@ -17,7 +18,6 @@ export function ImageSlider({ images, autoPlayInterval = 4000, className }: Imag
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   const defaultImages = [prize1, prize2, prize3];
-
   const displayImages = images && images.length > 0 ? images : defaultImages;
 
   const goToSlide = useCallback((index: number) => {
@@ -36,7 +36,7 @@ export function ImageSlider({ images, autoPlayInterval = 4000, className }: Imag
   }, [currentIndex, displayImages.length, goToSlide]);
 
   useEffect(() => {
-    if (isLightboxOpen) return; // Pause autoplay when lightbox is open
+    if (isLightboxOpen) return;
     const interval = setInterval(nextSlide, autoPlayInterval);
     return () => clearInterval(interval);
   }, [nextSlide, autoPlayInterval, isLightboxOpen]);
@@ -46,7 +46,6 @@ export function ImageSlider({ images, autoPlayInterval = 4000, className }: Imag
     if (!isLightboxOpen) return;
     
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsLightboxOpen(false);
       if (e.key === 'ArrowRight') nextSlide();
       if (e.key === 'ArrowLeft') prevSlide();
     };
@@ -126,82 +125,62 @@ export function ImageSlider({ images, autoPlayInterval = 4000, className }: Imag
         <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 w-3/4 h-40 bg-primary/30 blur-3xl rounded-full pointer-events-none" />
       </div>
 
-      {/* Lightbox Modal */}
-      {isLightboxOpen && (
-        <div 
-          className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in"
-          onClick={() => setIsLightboxOpen(false)}
-        >
-          {/* Close button */}
-          <button
-            onClick={() => setIsLightboxOpen(false)}
-            className="absolute top-4 right-4 p-3 rounded-full glass hover:bg-destructive/20 transition-colors z-50"
-            aria-label="Fechar"
-          >
-            <X className="w-6 h-6" />
-          </button>
+      {/* Lightbox Dialog */}
+      <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-0 border-none bg-transparent shadow-none [&>button]:hidden">
+          <div className="relative flex flex-col items-center justify-center">
+            {/* Image counter */}
+            <div className="absolute top-2 left-2 px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-sm text-sm font-medium z-50">
+              {currentIndex + 1} / {displayImages.length}
+            </div>
 
-          {/* Image counter */}
-          <div className="absolute top-4 left-4 px-4 py-2 rounded-full glass text-sm font-medium z-50">
-            {currentIndex + 1} / {displayImages.length}
-          </div>
-
-          {/* Main image */}
-          <div 
-            className="relative max-w-[95vw] max-h-[85vh] animate-scale-in"
-            onClick={(e) => e.stopPropagation()}
-          >
+            {/* Main image */}
             <img
               src={displayImages[currentIndex]}
               alt={`Prêmio ${currentIndex + 1}`}
-              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-card"
+              className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg"
             />
+
+            {/* Navigation arrows */}
+            <button
+              onClick={(e) => { e.stopPropagation(); prevSlide(); }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-background/80 backdrop-blur-sm hover:bg-primary/20 transition-colors z-50"
+              aria-label="Anterior"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); nextSlide(); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-background/80 backdrop-blur-sm hover:bg-primary/20 transition-colors z-50"
+              aria-label="Próximo"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+
+            {/* Thumbnail strip */}
+            <div className="flex gap-2 mt-4 p-2 rounded-xl bg-background/80 backdrop-blur-sm">
+              {displayImages.map((image, index) => (
+                <button
+                  key={index}
+                  onClick={(e) => { e.stopPropagation(); goToSlide(index); }}
+                  className={cn(
+                    'w-14 h-10 rounded-lg overflow-hidden transition-all duration-300',
+                    currentIndex === index
+                      ? 'ring-2 ring-primary shadow-glow scale-110'
+                      : 'opacity-50 hover:opacity-100'
+                  )}
+                >
+                  <img
+                    src={image}
+                    alt={`Miniatura ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
           </div>
-
-          {/* Navigation arrows */}
-          <button
-            onClick={(e) => { e.stopPropagation(); prevSlide(); }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full glass hover:bg-primary/20 transition-colors z-50"
-            aria-label="Anterior"
-          >
-            <ChevronLeft className="w-8 h-8" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); nextSlide(); }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full glass hover:bg-primary/20 transition-colors z-50"
-            aria-label="Próximo"
-          >
-            <ChevronRight className="w-8 h-8" />
-          </button>
-
-          {/* Thumbnail strip */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 p-2 rounded-xl glass z-50">
-            {displayImages.map((image, index) => (
-              <button
-                key={index}
-                onClick={(e) => { e.stopPropagation(); goToSlide(index); }}
-                className={cn(
-                  'w-16 h-12 rounded-lg overflow-hidden transition-all duration-300',
-                  currentIndex === index
-                    ? 'ring-2 ring-primary shadow-glow scale-110'
-                    : 'opacity-50 hover:opacity-100'
-                )}
-              >
-                <img
-                  src={image}
-                  alt={`Miniatura ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </button>
-            ))}
-          </div>
-
-          {/* Hint text */}
-          <p className="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 text-xs text-muted-foreground z-50">
-            Use as setas ← → ou clique fora para fechar
-          </p>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
